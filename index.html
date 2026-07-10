@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ratepi's Quiz 👑</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #fed6e3 0%, #a7c7e7 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* --- BACKGROUND ANIMATIONS (Butterflies & Stars) --- */
+        .bg-element {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.6;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) translateX(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) translateX(50px) rotate(360deg); opacity: 0; }
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.3); opacity: 0.8; }
+        }
+
+        /* --- MAIN CARD --- */
+        .card {
+            background: rgba(255, 255, 255, 0.92);
+            width: 90%;
+            max-width: 450px;
+            padding: 35px 25px;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            display: none;
+            animation: fadeIn 0.5s ease-in-out forwards;
+            transition: all 0.3s ease;
+        }
+
+        .card.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: #ff477e;
+            font-size: 2.2rem;
+            margin-bottom: 15px;
+        }
+
+        h2 {
+            color: #333;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        p {
+            color: #555;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+
+        /* --- INPUTS & BLOCKS --- */
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #444;
+        }
+
+        input[type="text"], input[type="date"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-block;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-green {
+            background-color: #2ec4b6;
+            color: white;
+            box-shadow: 0 4px 15px rgba(46, 196, 182, 0.3);
+            position: relative;
+        }
+
+        .btn-pink {
+            background-color: #ff477e;
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 71, 126, 0.3);
+        }
+
+        .btn-hint {
+            background: none;
+            border: none;
+            color: #888;
+            text-decoration: underline;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            cursor: pointer;
+            width: auto;
+        }
+
+        /* --- QUIZ OPTIONS --- */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #495057;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:hover {
+            background-color: #ffeef2;
+            border-color: #ff85a2;
+        }
+
+        /* --- DYNAMIC FEEDBACK --- */
+        .feedback-text {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-top: 15px;
+            min-height: 25px;
+        }
+        
+        .text-green { color: #25a195; }
+        .text-red { color: #e63946; }
+
+        .hint-box {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: #64748b;
+            display: none;
+            font-style: italic;
+        }
+
+        /* --- THE PINK LETTER SURPRISE --- */
+        .letter-wrapper {
+            margin: 20px auto;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: inline-block;
+        }
+
+        .envelope {
+            width: 120px;
+            height: 90px;
+            background-color: #ff85a2;
+            border-radius: 8px;
+            position: relative;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+        }
+
+        .envelope::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-left: 60px solid transparent;
+            border-right: 60px solid transparent;
+            border-top: 45px solid #ff477e;
+            border-radius: 4px;
+        }
+
+        /* --- CINEMATIC ENDING SCENE --- */
+        .cinematic-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.96);
+            z-index: 10;
+            display: none;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .credits-scroll {
+            position: absolute;
+            width: 85%;
+            max-width: 650px;
+            text-align: center;
+            color: #ffffff;
+            font-size: 1.6rem; /* Font size increased as requested */
+            font-weight: 600;
+            line-height: 1.8;
+            letter-spacing: 0.5px;
+            transform: translateY(100vh);
+        }
+
+        .credits-scroll h2 {
+            color: #ff477e;
+            font-size: 3rem;
+            margin-bottom: 30px;
+        }
+
+        .credits-scroll .signature {
+            color: #2ec4b6;
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-top: 50px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* --- CANVAS --- */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 3;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="bgDecorations"></div>
+
+    <!-- PAGE 1: WELCOME (With Moving Start Button Prank) -->
+    <div class="card active" id="page1">
+        <h1>Welcome to Ratepi’s Quiz 👑</h1>
+        <p>You wanted an engineering gift? Show me your skills then! 😉💪</p>
+        <div style="height: 80px; position: relative;" id="btnContainer">
+            <button class="btn btn-green" id="startBtn" onclick="handleStartClick()">Start</button>
+        </div>
+    </div>
+
+    <!-- PAGE 2: CREDENTIALS -->
+    <div class="card" id="page2">
+        <div class="input-group">
+            <label>Enter your name 👤</label>
+            <input type="text" id="nameInput" placeholder="Your beautiful name...">
+        </div>
+        <div class="input-group">
+            <label>Enter your birthday 📅</label>
+            <input type="date" id="dateInput" onchange="checkBirthdayDate()">
+        </div>
+        <div class="feedback-text" id="birthdayFeedback"></div>
+        <button class="btn btn-pink" style="display:none;" id="page2NextBtn" onclick="nextPage(3)">Next Step ✨</button>
+    </div>
+
+    <!-- PAGE 3: THE GAME / QUESTIONS -->
+    <div class="card" id="page3">
+        <p style="font-weight: 600; color: #ff477e; margin-bottom: 25px;">The game starts now, let's test your knowledge 🧠</p>
+        <h2 id="questionTitle">Question Text</h2>
+        
+        <div class="options-container" id="optionsBox"></div>
+        
+        <div class="feedback-text" id="quizFeedback"></div>
+        <div class="hint-box" id="hintBox"></div>
+        
+        <button class="btn btn-hint" id="hintBtn" onclick="toggleHint()">💡 Need a hint?</button>
+        <button class="btn btn-pink" id="quizNextBtn" style="display: none; margin-top: 15px;" onclick="handleNextQuestion()">Next ➡️</button>
+    </div>
+
+    <!-- PAGE 4: APOLOGY -->
+    <div class="card" id="page4">
+        <h1 id="apologyHeading">Great Job 🥳🏆</h1>
+        <p>Sorry for turning your birthday gift into a friendship quiz! 🙈❤️</p>
+        <button class="btn btn-pink" onclick="nextPage(5)">Next ➡️</button>
+    </div>
+
+    <!-- PAGE 5: THE LETTER PRANK & PHOTO REVEAL -->
+    <div class="card" id="page5">
+        <h2>Open the letter to see the gift 💌</h2>
+        
+        <div class="letter-wrapper" id="prankLetter" onclick="handleLetterClick()">
+            <div class="envelope">❤️</div>
+        </div>
+
+        <div id="photoRevealArea" style="display: none; animation: fadeIn 0.5s ease;">
+            <p style="font-size: 1.2rem; font-weight: bold; color: #ff477e; margin-bottom: 15px;">The gift is our friendship! What do you expect, sweetie? You should be glad for that ❤️😂</p>
+            <!-- Your uploaded picture sits here -->
+            <img src="us.jpg" alt="Us" style="width: 100%; max-width: 280px; border-radius: 16px; margin: 15px 0; box-shadow: 0 8px 20px rgba(0,0,0,0.15); border: 3px solid white;">
+            <p>Hope you have a great day, and I hope you like the gift. My best work ever, for the most gorgeous girl ever ✨🦋</p>
+            <button class="btn btn-green" style="margin-top: 15px;" onclick="startCinematicEnding()">Click for a Final Surprise 🎬</button>
+        </div>
+        <div class="feedback-text" id="letterFeedback"></div>
+    </div>
+
+    <!-- CINEMATIC SCREEN LAYER -->
+    <div class="cinematic-container" id="cinematicLayer">
+        <div class="credits-scroll" id="creditsScroll">
+            <h2>Happy Birthday ✨</h2>
+            <p>To the soul who makes ordinary days feel like beautiful memories waiting to happen. Some people come into our lives like passing seasons, but you arrived like the sunrise—quietly, gently, and before I knew it, you had filled my world with warmth and light. Your smile carries a kind of magic that softens even the hardest days, and your heart is the kind that leaves kindness wherever it goes.</p>
+            <br>
+            <p>I hope this new year of your life blooms with endless joy, fearless dreams, and moments so beautiful they take your breath away. I hope you always find reasons to laugh, people who cherish you, and paths that lead you to everything your heart desires. And if life ever feels heavy, I hope you remember that there will always be someone grateful that you exist, someone who believes in you, and someone whose life became brighter simply because you are part of it. And if you need any help at any time, remember I will always be there for you.</p>
+            <br>
+            <p>You are a rare chapter in my story, one I will always read with a smile. Thank you for being wonderfully, unapologetically you. Happy Birthday. May your heart always be as full as the happiness you bring to everyone around you, and may every star in the night sky remind you that you are loved, appreciated, and truly unforgettable.</p>
+            
+            <div class="signature">Sincerely, RATEPI ❤️</div>
+        </div>
+    </div>
+
+    <canvas id="fireworksCanvas"></canvas>
+
+    <script>
+        let userName = "";
+
+        // --- AMBIENT DECORATIONS (Butterflies & Shiny Things) ---
+        const bgDecorations = document.getElementById('bgDecorations');
+        const emojis = ['🦋', '✨', '⭐', '🌸'];
+        for (let i = 0; i < 30; i++) {
+            const el = document.createElement('div');
+            el.classList.add('bg-element');
+            el.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+            if (el.innerText === '🦋') {
+                el.style.fontSize = (Math.random() * 15 + 15) + 'px';
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.animation = `floatUp ${Math.random() * 6 + 6}s infinite linear`;
+            } else {
+                el.style.fontSize = (Math.random() * 10 + 8) + 'px';
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.top = Math.random() * 100 + 'vh';
+                el.style.animation = `pulseGlow ${Math.random() * 3 + 2}s infinite ease-in-out`;
+            }
+            bgDecorations.appendChild(el);
+        }
+
+        // --- PAGE 1: START BUTTON PRANK ENGINE ---
+        let startClicks = 0;
+        function handleStartClick() {
+            startClicks++;
+            const btn = document.getElementById('startBtn');
+            if (startClicks === 1) {
+                btn.style.transform = 'translate(130px, -20px)';
+            } else if (startClicks === 2) {
+                btn.style.transform = 'translate(-120px, 30px)';
+            } else if (startClicks === 3) {
+                btn.style.transform = 'none';
+                nextPage(2);
+            }
+        }
+
+        // --- NAVIGATION ENGINE ---
+        function nextPage(pageNum) {
+            document.querySelectorAll('.card').forEach(card => card.classList.remove('active'));
+            document.getElementById(`page${pageNum}`).classList.add('active');
+            if (pageNum === 3) loadQuestion();
+            if (pageNum === 4) {
+                document.getElementById('apologyHeading').innerText = `Great Job, ${userName}! 🥳🏆`;
+            }
+        }
+
+        // --- PAGE 2: BIRTHDAY VALIDATION ---
+        function checkBirthdayDate() {
+            const dateVal = document.getElementById('dateInput').value; // Formats as YYYY-MM-DD
+            const feedback = document.getElementById('birthdayFeedback');
+            const nextBtn = document.getElementById('page2NextBtn');
+            userName = document.getElementById('nameInput').value.trim() || "beautiful";
+
+            if (dateVal === '2002-07-13') {
+                feedback.className = "feedback-text text-green";
+                feedback.innerText = `Ahhh, so it's your birthday, ${userName}! Hope you have a good one for real! 🥳🎉`;
+                nextBtn.style.display = "block";
+            } else {
+                feedback.className = "feedback-text text-red";
+                feedback.innerText = "Maybe you got lost, let me help you... month/day/year 😉";
+                nextBtn.style.display = "none";
+            }
+        }
+
+        // --- QUIZ QUESTIONS DATA ---
+        const quizQuestions = [
+            {
+                question: "My ideal birthday gift to you has to be written in lines of code because:",
+                options: ["1/ You are my friend and I love you", "2/ You got jealous of my gift to Riham", "3/ I’m an Engineer and that's my job"],
+                correct: 1,
+                allCorrect: false,
+                correctResponse: "So you really got jealous of that!! 😂🤭",
+                wrongResponse: "Do not lie again 🛠️❌",
+                hint: "We did discuss that on Dounia's graduation day 🎓"
+            },
+            {
+                question: "If we are listening to music together, which artist is most likely playing? 🎵",
+                options: ["1/ Djam", "2/ The Weeknd", "3/ Warda Charlomenti"],
+                correct: 1,
+                allCorrect: false,
+                correctResponse: "Exactly! Starboy vibes always 🎧✨",
+                wrongResponse: "wronggg 😮‍💨✖️",
+                hint: "Really, do you need a hint for answering that? 🙄"
+            },
+            {
+                question: "On what day is my birthday? 🤔🎂",
+                options: ["1/ 16/03/2003", "2/ 14/04/2003", "3/ 23/06/2002"],
+                correct: 1,
+                allCorrect: false,
+                correctResponse: "What do you expect? You had to get that right!! 🥳🥳",
+                wrongResponse: "Really? We’re done 💀💔",
+                hint: "Really!! You don't know my birthday? 😮"
+            },
+            {
+                question: "Do you remember when I stole your phone? I got angry because:",
+                options: ["1/ You said a bad word to me", "2/ You said a bad word to me", "3/ You said a bad word to me"],
+                correct: 0,
+                allCorrect: true, 
+                correctResponse: "Exactly, but hey, look at the bright side, I'm not angry anymore 😂",
+                hint: "Literally every choice looks solid here... 🔎"
+            },
+            {
+                question: "I'm making this gift because: (PS: You should use the hint!)",
+                options: ["1/ You are my friend and I love you", "2/ You are beautiful", "3/ You deserve all the happiness"],
+                correct: 0,
+                allCorrect: true,
+                correctResponse: "Nooo, because you are my best friend and I love you, and you are beautiful, and also you deserve all the happiness in your life! 🥺❤️",
+                hint: "You actually have to look deep down into all options!"
+            }
+        ];
+
+        let currentQstIndex = 0;
+
+        function loadQuestion() {
+            const qst = quizQuestions[currentQstIndex];
+            document.getElementById('questionTitle').innerText = qst.question;
+            const optionsBox = document.getElementById('optionsBox');
+            optionsBox.innerHTML = '';
+            document.getElementById('quizFeedback').innerText = '';
+            document.getElementById('hintBox').style.display = 'none';
+            document.getElementById('quizNextBtn').style.display = 'none';
+
+            qst.options.forEach((opt, idx) => {
+                const button = document.createElement('button');
+                button.classList.add('option-btn');
+                button.innerText = opt;
+                button.onclick = () => selectOption(idx);
+                optionsBox.appendChild(button);
+            });
+        }
+
+        function selectOption(selectedIndex) {
+            const qst = quizQuestions[currentQstIndex];
+            const feedback = document.getElementById('quizFeedback');
+            const nextBtn = document.getElementById('quizNextBtn');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
+
+            if (qst.allCorrect || selectedIndex === qst.correct) {
+                feedback.className = "feedback-text text-green";
+                feedback.innerText = qst.correctResponse;
+                nextBtn.style.display = "block";
+            } else {
+                feedback.className = "feedback-text text-red";
+                feedback.innerText = qst.wrongResponse;
+                setTimeout(() => {
+                    document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = false);
+                }, 1500);
+            }
+        }
+
+        function toggleHint() {
+            const hintBox = document.getElementById('hintBox');
+            hintBox.innerText = quizQuestions[currentQstIndex].hint;
+            hintBox.style.display = hintBox.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function handleNextQuestion() {
+            currentQstIndex++;
+            if (currentQstIndex < quizQuestions.length) {
+                loadQuestion();
+            } else {
+                nextPage(4);
+            }
+        }
+
+        // --- PAGE 5: LETTER PRANK ENGINE ---
+        let letterClicks = 0;
+        function handleLetterClick() {
+            letterClicks++;
+            const letter = document.getElementById('prankLetter');
+            const feedback = document.getElementById('letterFeedback');
+
+            if (letterClicks === 1) {
+                letter.style.transform = 'translate(-80px, -15px)';
+            } else if (letterClicks === 2) {
+                letter.style.transform = 'translate(90px, 20px)';
+            } else if (letterClicks === 3) {
+                letter.style.transform = 'translate(0, 0) scale(1.4)';
+                feedback.className = "feedback-text text-red";
+                feedback.innerText = "Sorry 🤣🤣 I promise you this is the last one!";
+            } else if (letterClicks === 4) {
+                letter.style.display = 'none';
+                feedback.innerText = "";
+                document.getElementById('photoRevealArea').style.display = 'block';
+                initFireworks();
+            }
+        }
+
+        // --- CINEMATIC ENDING SCENE ENGINE ---
+        function startCinematicEnding() {
+            const layer = document.getElementById('cinematicLayer');
+            const scroller = document.getElementById('creditsScroll');
+            layer.style.display = 'flex';
+            
+            setTimeout(() => {
+                scroller.style.transition = 'transform 32s linear';
+                scroller.style.transform = 'translateY(-115%)';
+            }, 100);
+        }
+
+        // --- FIREWORKS ENGINE ---
+        const canvas = document.getElementById('fireworksCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y; this.color = color;
+                this.radius = Math.random() * 3 + 1;
+                this.velocity = { x: Math.random() * 6 - 3, y: Math.random() * 6 - 3 };
+                this.alpha = 1;
+                this.decay = Math.random() * 0.015 + 0.015;
+            }
+            draw() {
+                ctx.save(); ctx.globalAlpha = this.alpha; ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+                ctx.fillStyle = this.color; ctx.fill(); ctx.restore();
+            }
+            update() { this.x += this.velocity.x; this.y += this.velocity.y; this.velocity.y += 0.04; this.alpha -= this.decay; }
+        }
+
+        function spawnFirework() {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * (canvas.height * 0.6);
+            const color = `hsl(${Math.random() * 360}, 100%, 60%)`;
+            for (let i = 0; i < 40; i++) particles.push(new Particle(x, y, color));
+        }
+
+        function initFireworks() {
+            setInterval(spawnFirework, 800);
+            animateFireworks();
+        }
+
+        function animateFireworks() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, i) => {
+                if (p.alpha <= 0) particles.splice(i, 1);
+                else { p.update(); p.draw(); }
+            });
+            requestAnimationFrame(animateFireworks);
+        }
+    </script>
+</body>
+</html>
